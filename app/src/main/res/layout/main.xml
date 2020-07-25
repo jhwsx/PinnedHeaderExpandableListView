@@ -16,7 +16,7 @@
         android:layout_height="match_parent"
 		android:layout_marginTop="0dp"
         android:orientation="vertical" >
-
+        <!--粘性头部布局-->
         <LinearLayout
             android:id="@+id/sticky_header"
             android:layout_width="match_parent"
@@ -32,7 +32,7 @@
                 android:src="@drawable/ic_launcher" />
 
         </LinearLayout>
-
+        <!--粘性内容布局-->
         <LinearLayout
             android:id="@+id/sticky_content"
             android:layout_width="match_parent"

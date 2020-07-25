@@ -44,6 +44,11 @@ public class StickyLayout extends LinearLayout {
     private static final boolean DEBUG = true;
 
     public interface OnGiveUpTouchEventListener {
+        /**
+         * 当子元素不处理事件的时候,返回 true
+         * @param event
+         * @return
+         */
         public boolean giveUpTouchEvent(MotionEvent event);
     }
 
@@ -121,10 +126,11 @@ public class StickyLayout extends LinearLayout {
     public void setOnGiveUpTouchEventListener(OnGiveUpTouchEventListener l) {
         mGiveUpTouchEventListener = l;
     }
-
+    // 外部拦截法
+    // 拦截方法
     @Override
     public boolean onInterceptTouchEvent(MotionEvent event) {
-        int intercepted = 0;
+        boolean intercepted = false;
         int x = (int) event.getX();
         int y = (int) event.getY();
 
@@ -134,27 +140,34 @@ public class StickyLayout extends LinearLayout {
             mLastYIntercept = y;
             mLastX = x;
             mLastY = y;
-            intercepted = 0;
+            intercepted = false;
             break;
         }
         case MotionEvent.ACTION_MOVE: {
             int deltaX = x - mLastXIntercept;
             int deltaY = y - mLastYIntercept;
             if (mDisallowInterceptTouchEventOnHeader && y <= getHeaderHeight()) {
-                intercepted = 0;
+                Log.d(TAG, "onInterceptTouchEvent: 1");
+                intercepted = false;
             } else if (Math.abs(deltaY) <= Math.abs(deltaX)) {
-                intercepted = 0;
+                Log.d(TAG, "onInterceptTouchEvent: 2");
+                // 是横向滑动时, 不拦截
+                intercepted = false;
             } else if (mStatus == STATUS_EXPANDED && deltaY <= -mTouchSlop) {
-                intercepted = 1;
+                Log.d(TAG, "onInterceptTouchEvent: 3");
+                // 展开状态并且在向上滑动列表
+                intercepted = true;
             } else if (mGiveUpTouchEventListener != null) {
                 if (mGiveUpTouchEventListener.giveUpTouchEvent(event) && deltaY >= mTouchSlop) {
-                    intercepted = 1;
+                    Log.d(TAG, "onInterceptTouchEvent: 4");
+                    intercepted = true;
                 }
+                Log.d(TAG, "onInterceptTouchEvent: 5");
             }
             break;
         }
         case MotionEvent.ACTION_UP: {
-            intercepted = 0;
+            intercepted = false;
             mLastXIntercept = mLastYIntercept = 0;
             break;
         }
@@ -163,11 +176,11 @@ public class StickyLayout extends LinearLayout {
         }
 
         if (DEBUG) {
-            Log.d(TAG, "intercepted=" + intercepted);
+            Log.d(TAG, "onInterceptTouchEvent: intercepted=" + intercepted);
         }
-        return intercepted != 0 && mIsSticky;
+        return intercepted && mIsSticky;
     }
-
+    // 触摸事件
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!mIsSticky) {
@@ -180,7 +193,6 @@ public class StickyLayout extends LinearLayout {
             break;
         }
         case MotionEvent.ACTION_MOVE: {
-            int deltaX = x - mLastX;
             int deltaY = y - mLastY;
             if (DEBUG) {
                 Log.d(TAG, "mHeaderHeight=" + mHeaderHeight + "  deltaY=" + deltaY + "  mlastY=" + mLastY);
@@ -191,7 +203,7 @@ public class StickyLayout extends LinearLayout {
         }
         case MotionEvent.ACTION_UP: {
             // 这里做了下判断，当松开手的时候，会自动向两边滑动，具体向哪边滑，要看当前所处的位置
-            int destHeight = 0;
+            int destHeight;
             if (mHeaderHeight <= mOriginalHeaderHeight * 0.5) {
                 destHeight = 0;
                 mStatus = STATUS_COLLAPSED;
@@ -260,6 +272,10 @@ public class StickyLayout extends LinearLayout {
         setHeaderHeight(height);
     }
 
+    /**
+     * 设置头部的高度
+     * @param height
+     */
     public void setHeaderHeight(int height) {
         if (!mInitDataSucceed) {
             initData();
